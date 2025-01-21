@@ -5,11 +5,11 @@ include('credentials.php');
 // Function to get access token using the refresh token
 function refreshAccessToken($refreshToken) {
     $postData = [
-        'refresh_token' => $refreshToken,
+        'refresh_token' => $refreshToken, 
         'grant_type' => 'refresh_token',
         'client_id' => CLIENT_ID,
         'client_secret' => CLIENT_SECRET,
-    ];
+    ]; 
 
     $ch = curl_init();
     curl_setopt_array($ch, [
