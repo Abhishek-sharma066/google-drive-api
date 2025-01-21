@@ -12,6 +12,7 @@ $(document).ready(function() {
     const $createBtn = $('#create-btn');
     const $cancelBtn = $('#cancel-btn');
     const $modalTitle = $('#modal-title');
+    const $delete_button = $('.delete_folder_file');
 
     // Function to load files and folders from Google Drive
     function loadFiles(folderId) {
@@ -40,7 +41,7 @@ $(document).ready(function() {
                                 <div class="folder-header">
                                     <span class="folder-icon"><i class="fa fa-folder" aria-hidden="true" style="color:#ffc109; font-size:30px;"></i></span>
                                     <span class="folder-name">${file.name}</span>
-                                </div>
+                                </div><div><i data-id= "${file.id}"  class=" delete_folder_file fa fa-trash" aria-hidden="true" style="color:red; font-size:20px; padding: 5px 10px;"></i></div>
                             </div>
                         `;
                     } else {
@@ -49,6 +50,7 @@ $(document).ready(function() {
                         fileElement = `
                             <div class="file" data-url="${fileUrl}">
                                 <span>${file.name}</span>
+                                <div><i data-id= "${file.id}" class=" delete_folder_file fa fa-trash" aria-hidden="true" style="color:red; font-size:20px; padding: 5px 10px;"></i></div>
                             </div>
                         `;
                     }
@@ -139,6 +141,66 @@ $(document).ready(function() {
             alert('Please enter a name for the folder or file.');
         }
     });
+
+    // delete button functionality
+$(document).on('click', '.delete_folder_file', function() {
+    const deleteId = $(this).data('id');  // Get the data-id of the clicked item
+
+    // Show SweetAlert confirmation dialog
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'No, cancel!'
+    }).then((result) => {
+     
+        if (result.isConfirmed) {
+            // Proceed with AJAX request to delete the file/folder If the user confirms the deletion
+            $.ajax({
+                url: 'google-drive.php',
+                type: 'POST',
+                data: {
+                    action: 'delete_file_folder',
+                    delete_id: deleteId
+                },
+                success: function(response) {
+                    if (typeof response === 'string') {
+                        response = JSON.parse(response);
+                    }
+                    if (response.success) {
+                        loadFiles(currentFolderId);
+                        Swal.fire(
+                            'Deleted!',
+                            'Your file/folder has been deleted.',
+                            'success'
+                        );
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            'There was a problem deleting your file/folder.',
+                            'error'
+                        );
+                    }
+                },
+                error: function(xhr, status, error) {
+                    
+                    Swal.fire(
+                        'Error!',
+                        'There was a problem deleting your file/folder.',
+                        'error'
+                    );
+                }
+            });
+        } else {
+
+            console.log('User canceled deletion.');
+        }
+    });
+});
 
     // Cancel button click handler inside the modal
     $cancelBtn.click(function() {

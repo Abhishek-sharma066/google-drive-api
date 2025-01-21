@@ -176,7 +176,39 @@ if (curl_errno($curl)) {
 curl_close($curl);
 }
 
+if(isset($_POST['action']) && $_POST['action'] === 'delete_file_folder'){
 
+   $accessToken = $_SESSION['access_token'];
+
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://www.googleapis.com/drive/v3/files/'.$_POST["delete_id"],
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'DELETE',
+  CURLOPT_HTTPHEADER => array(
+    'Authorization: Bearer ' . $accessToken,
+  ),
+));
+
+$response = curl_exec($curl);
+$http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE); 
+
+curl_close($curl);
+
+if ($http_code == 204) {
+
+    echo json_encode(['success' => 'File/Folder deleted successfully']);
+} else {
+
+    echo json_encode(['error' => 'Failed to delete file/folder', 'http_code' => $http_code, 'response' => $response]);
+}
+}
 
 
 // Check for valid access token in session
