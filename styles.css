@@ -39,7 +39,7 @@ h1 {
     transition: background-color 0.3s ease;
     margin: 0px 5px;
 }
-#main_dir {
+#main_dir , .upload_div {
     background-color: #ffffff;
     color: black;
     padding: 10px 20px;
@@ -160,6 +160,59 @@ h1 {
     background-color: #ddd;
 }
 
+.loader-container {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; 
+    flex-direction: column;
+}
+
+.loading_text {
+    background: linear-gradient(135deg,  #fc2b18, #FBBC05, #34A853, #0060fc);
+    -webkit-background-clip: text;
+    color: transparent;
+    margin:10px;
+    font-size: 24px;
+}
+.loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#status {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #333;
+}
+
+#uploadForm {
+    display: none;
+    background-color: #ffffff;
+    color: black;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.5s ease;
+    margin: 0px 5px;
+    box-shadow: 0px 0px 5px gray;
+}
 /* Responsive Design */
 @media (max-width: 768px) {
     #file-manager {

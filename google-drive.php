@@ -128,21 +128,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'create_folder') {
 
 if(isset($_POST['action']) && $_POST['action'] === 'create_file'){
 
-$filename = $_POST['name'];  
-$folderId = $_POST['folderId'];  // Google Drive folder ID where the file should be created
+    $filename = $_POST['name'];  
+    $folderId = $_POST['folderId'];  // Google Drive folder ID where the file should be created
+    $fileExtension = pathinfo(strtolower($filename), PATHINFO_EXTENSION);
+    $mimeType = 'application/' . $fileExtension;
+    $createFileUrl = 'https://www.googleapis.com/drive/v3/files';
 
-// Define the mime type based on file extension
-$fileExtension = pathinfo(strtolower($filename), PATHINFO_EXTENSION);
-$mimeType = 'application/' . $fileExtension;
-
-// Google Drive API URL for file creation
-$createFileUrl = 'https://www.googleapis.com/drive/v3/files';
-
-$metadata = json_encode([
-    'name' => $filename,   
-    'mimeType' => $mimeType,
-    'parents' => [$folderId],
-]);
+    $metadata = json_encode([
+        'name' => $filename,   
+        'mimeType' => $mimeType,
+        'parents' => [$folderId],
+    ]);
 
 // Get the access token from the session
 $accessToken = $_SESSION['access_token']; 
@@ -175,7 +171,73 @@ if (curl_errno($curl)) {
 
 curl_close($curl);
 }
+////////// upload files
+if (isset($_POST['action']) && $_POST['action'] === 'upload_files') {
 
+    $accessToken = $_SESSION['access_token'];
+
+    $folderId = isset($_POST['folderId']) && !empty($_POST['folderId']) ? $_POST['folderId'] : 'root';
+
+    if (isset($_FILES['files']) && is_array($_FILES['files']['name'])) {
+        handleMultipleFileUpload($accessToken, $_FILES['files'], $folderId);
+    } else {
+        echo json_encode(['error' => 'No files uploaded or invalid action.']);
+    }
+}
+
+function handleMultipleFileUpload($accessToken, $files, $folderId) {
+    // Loop through each uploaded file
+    foreach ($files['name'] as $key => $fileName) {
+        $fileTmpPath = $files['tmp_name'][$key];
+        $fileType = $files['type'][$key];
+        $fileContents = file_get_contents($fileTmpPath);
+
+        $fileMetadata = [
+            'name' => $fileName,
+            'parents' => [$folderId]
+        ];
+
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $accessToken,
+                'Content-Type: multipart/related; boundary=foo_bar_baz',
+            ],
+            CURLOPT_POSTFIELDS => buildMultipartRequest($fileMetadata, $fileContents, $fileType),
+        ]);
+
+        $response = curl_exec($curl);
+        if (curl_errno($curl)) {
+            echo json_encode(['error' => curl_error($curl)]);
+        } else {
+            echo $response;
+        }
+
+        curl_close($curl);
+    }
+}
+
+function buildMultipartRequest($fileMetadata, $fileContents, $fileType) {
+    $boundary = 'foo_bar_baz';
+    $delimiter = '--' . $boundary;
+
+    $metadata = json_encode($fileMetadata);
+    $metadataPart = $delimiter . "\r\n" .
+                    'Content-Type: application/json; charset=UTF-8' . "\r\n\r\n" .
+                    $metadata . "\r\n";
+
+    $filePart = $delimiter . "\r\n" .
+                'Content-Type: ' . $fileType . "\r\n" .
+                'Content-Transfer-Encoding: base64' . "\r\n\r\n" .
+                base64_encode($fileContents) . "\r\n";
+
+    return $metadataPart . $filePart . $delimiter . '--';
+}
+// Delete folder or file 
 if(isset($_POST['action']) && $_POST['action'] === 'delete_file_folder'){
 
    $accessToken = $_SESSION['access_token'];
@@ -210,6 +272,57 @@ if ($http_code == 204) {
 }
 }
 
+// Function to rename the folder in Google Drive
+function renameFolder($accessToken, $folderId, $newName) {
+
+    $url = "https://www.googleapis.com/drive/v3/files/{$folderId}";
+
+    $data = json_encode([
+        'name' => $newName  
+    ]);
+
+    $curl = curl_init();
+
+    curl_setopt_array($curl, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer {$accessToken}",
+            "Content-Type: application/json"  
+        ],
+        CURLOPT_CUSTOMREQUEST => 'PATCH',  
+        CURLOPT_POSTFIELDS => $data 
+    ]);
+
+    $response = curl_exec($curl);
+    if (curl_errno($curl)) {
+        echo json_encode(['error' => curl_error($curl)]);
+        curl_close($curl);
+        return;
+    }
+
+    curl_close($curl);
+
+    if ($response) {
+     
+        $responseData = json_decode($response, true);
+        return $responseData;
+    } else {
+        return ['error' => 'Failed to rename folder'];
+    }
+}
+// rename folder
+if ($_POST['action'] == 'rename_folder') {
+    $accessToken = $_SESSION['access_token'];
+    $folderId = $_POST['folderId'];
+    $newName = $_POST['newName'];
+
+    $response = renameFolder($accessToken, $folderId, $newName);
+
+
+    echo json_encode($response);
+}
+/////////////////////////
 
 // Check for valid access token in session
 if (!isset($_SESSION['access_token']) || !isset($_SESSION['access_token_expiry']) || time() > $_SESSION['access_token_expiry']) {

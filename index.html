@@ -18,7 +18,17 @@
 <body>
     <div id="file-manager">
         <h1>Google Drive File Manager</h1>
+<p id="status"></p>
+<!-- loader -->
+ <div class="loader-container" id="loaderContainer">
+    <div class="loader"></div>
+    <div class="loading_text"><strong>  Uploading files to google drive ...</strong></div>
+</div>
+    <!-- ///////////// -->
         <div id="navigation">  
+            <div class="upload_div">
+                <div class="file-name" id="fileName">Upload files</div>
+               </div>
             <div class="create" id="create_folder">+create new folder</div>
             <div class="create" id="create_file">+create new file</div>        
             <button id="main_dir" style="display: none;">Main Directory</button>
@@ -28,6 +38,11 @@
         <div id="file-list"></div>
     </div>
 
+    <!-- ////////// -->
+    <form id="uploadForm" enctype="multipart/form-data">
+            <button type="button" id="uploadBtn" class="upload-btn">Upload Files</button>
+            <input type="file" id="fileInput" name="files[]" multiple required style="display: none;">     
+        </form>
     <!-- Modal for creating folder or file -->
 <div id="modal" class="modal">
     <div class="modal-content">
